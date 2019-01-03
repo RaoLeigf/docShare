@@ -38,5 +38,4 @@ dist
 upload
 logs
 app.js
-config/
 index.html

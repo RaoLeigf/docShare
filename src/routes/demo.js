@@ -7,7 +7,7 @@ const router = Router({
 
 
 //测试用路由
-router.post('/hello',Demo.controllerDemo)
+router.get('/hello',Demo.controllerDemo)
 
 
 module.exports = router

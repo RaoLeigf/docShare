@@ -1,4 +1,7 @@
 const errors = require('./error')
+const {
+    dbQuery
+} = require('./dbconnection')
 
 var getResponse = (success,data)=>{
     let re
@@ -19,5 +22,7 @@ var getResponse = (success,data)=>{
 }
 
 module.exports = {
-    getResponse
+    getResponse,
+    dbQuery,
+    errors
 }

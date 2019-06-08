@@ -1,13 +1,13 @@
 const Router = require("koa-router")
-const Demo = require('../controller/demo')
+const File = require('../controller/file')
 
 const router = Router({
-	prefix: "/api/demo"
+	prefix: "/api/file"
 })
 
 
 //测试用路由
-router.post('/hello',Demo.controllerDemo)
+router.post('/uploadImg',File.uploadImg)
 
 
 module.exports = router

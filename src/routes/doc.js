@@ -30,5 +30,7 @@ router.post('/deleteDoc',Doc.deleteDoc)
 //我的文档总数
 router.post('/sumMyDocs',Doc.sumMyDocs)
 
+//推荐数量
+router.post('/commond',Doc.commond)
 
 module.exports = router

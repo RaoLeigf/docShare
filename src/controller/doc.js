@@ -124,7 +124,31 @@ const getDocListByType = async(ctx) =>{
 //根据用户喜好推荐文档列表
 const getDocListByLike = async(ctx) =>{
     let Id = ctx.session.userInfo.Id
-    let sql = `select doc.*,userInfo.UserName,userinfo.HeadImg,
+    let like = 5
+    let history = 5
+    var recommendsql = `select * from recommend where userId = ${Id}`
+    let recommendData = await dbQuery( recommendsql )
+    //查询推荐的比例
+    if(!recommendData.length == 0){
+        let like2 = recommendData[0].like
+        let history2 = recommendData[0].history
+        if( like2 == 0 && history2 == 0){
+         like = 5
+         history = 5
+        }else if(like2 == 0 && history2 != 0){
+         like = 0
+         history = 10
+        }else if(like2 != 0 && history2 == 0){
+         like = 10
+         history = 0
+        }
+
+        like = Math.floor((like2*10)/(like2 + history2))
+        history = 10 - like
+    }
+
+    
+    let likesql = `select doc.*,userInfo.UserName,userinfo.HeadImg,'like' tag,
     (
     select count(*)
     from doclike dk
@@ -143,12 +167,50 @@ const getDocListByLike = async(ctx) =>{
 		where UserId = '${Id}'
 )
     order by doc.Id desc
-`
+    limit ${like}
+`  
+    let likeData = await dbQuery(likesql)
     
-    let Data = await dbQuery(sql)
+    let historylikesql = `select doc.*,userInfo.UserName,userinfo.HeadImg,'history' tag,
+    (
+    select count(*)
+    from doclike dk
+    where dk.DocId = doc.Id and dk.IsLiked = 1
+    ) as likedSum,
+    (
+    select count(*)
+    from doclike ddk
+    where ddk.DocId = doc.Id and ddk.IsLiked = 0
+    ) as dislikedSum
+    from doc 
+    inner join userinfo on doc.creatorId = userInfo.Id
+		where doc.typeId in (
+		select d.typeId
+        from history h 
+        inner join doc d on d.Id = h.docId
+        where h.UserId = '${Id}' 
+        )
+    and doc.Id not in (`
+    if(likeData.length > 0){
+        for(let i = 0; i < likeData.length; i++){
+            historylikesql+=`${likeData[i].Id}`
+            if(i != likeData.length-1){
+                historylikesql+=`,`
+            }else{
+                historylikesql+=`)`
+            }
+        }
+    }else{
+        historylikesql+=`0)`
+    }
+    historylikesql+=`
+    order by doc.Id desc
+    limit ${history}`
+    
+    let historyData = await dbQuery(historylikesql)
 
-    if(Data.length == 0){
-        sql =  `select doc.*,userInfo.UserName,userinfo.HeadImg,
+    if(likeData.length == 0 && historyData.length == 0){
+        sql =  `select doc.*,userInfo.UserName,userinfo.HeadImg,'all' tag,
         (
         select count(*)
         from doclike dk
@@ -164,8 +226,18 @@ const getDocListByLike = async(ctx) =>{
         order by doc.Id desc`
     
         Data = await dbQuery(sql)
+        ctx.body = getResponse(true,Data)
+        return 
     }
-    ctx.body = getResponse(true,Data)
+    let totleData = new Array()
+    for(let i = 0; i < likeData.length; i++){
+        totleData.push(likeData[i])
+    }
+    for(let i = 0; i < historyData.length; i++){
+        totleData.push(historyData[i])
+    }
+    ctx.body = getResponse(true,totleData)
+    
 }
 
 //查看我创建的文档
@@ -215,6 +287,30 @@ const sumMyDocs = async(ctx) =>{
     ctx.body = getResponse(true,Data[0])
 }
 
+const commond = async(ctx) =>{
+    var Id = ctx.session.userInfo.Id
+    let {
+        Tag
+    } = ctx.request.body
+    var sql1 = `select * from recommend where userId = '${Id}' `
+    let data1 = await dbQuery(sql1)
+
+    if(data1.length > 0 ){
+        var sql2 = `		update recommend
+		set \`${Tag}\` = \`${Tag}\`+1
+        where userId = '${Id}' `
+        let data2 = await dbQuery(sql2)
+    }else if (Tag == 'like'){
+        var sql3 = `INSERT INTO \`recommend\`(\`like\`, \`history\`, \`userId\`) VALUES (1, 0, ${Id})`
+        let data3 = await dbQuery(sql3)
+    }else{
+        var sql4 = `INSERT INTO \`recommend\`(\`like\`, \`history\`, \`userId\`) VALUES (1, 0, ${Id})`
+        let data4 = await dbQuery(sql4)
+    }
+
+    ctx.body = getResponse(true,true)
+}
+
 module.exports = {
     createDoc,
     getDocDetailById,
@@ -223,5 +319,6 @@ module.exports = {
     getDocListByLike,
     getMyDocs,
     deleteDoc,
-    sumMyDocs
+    sumMyDocs,
+    commond
 }

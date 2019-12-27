@@ -2,7 +2,7 @@
 const port = 3001
 //数据库连接属性
 const dbconfig ={
-    database: 'docshare',//数据库名
+    database: 'docsharee',//数据库名
     user: 'root',//用户名
     password: '123456',//密码
     port: '3306',

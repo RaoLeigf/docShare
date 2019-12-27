@@ -1,5 +1,5 @@
 //服务器端口
-const port = 3000
+const port = 3001
 //数据库连接属性
 const dbconfig ={
     database: 'docshare',//数据库名
